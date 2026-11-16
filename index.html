@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Its My Reference - Arts of NDN</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            cyan: '#00f2fe',
+                            gold: '#ffd700',
+                            violet: '#7f00ff',
+                            darkBg: '#0f172a',
+                            panelBg: '#1e293b'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 h-screen flex flex-col overflow-hidden select-none">
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed top-5 right-5 z-50 transform translate-x-full transition-transform duration-300 bg-slate-900 border border-brand-cyan/40 text-slate-200 px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-3">
+        <i id="toast-icon" class="fa-solid fa-info-circle text-brand-cyan"></i>
+        <span id="toast-message" class="text-sm font-medium">Action successful</span>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 px-4 py-3 flex items-center justify-between shrink-0 z-20">
+        <div class="flex items-center space-x-3">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-violet via-brand-cyan to-brand-gold p-[2px] flex items-center justify-center shadow-lg shadow-brand-cyan/20">
+                <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+                    <i class="fa-solid fa-palette text-brand-cyan text-sm"></i>
+                </div>
+            </div>
+            <div>
+                <h1 class="font-bold text-base tracking-wider bg-gradient-to-r from-brand-cyan via-white to-brand-gold bg-clip-text text-transparent uppercase">ITS MY REFERENCE</h1>
+                <p class="text-[10px] text-brand-gold tracking-widest uppercase font-semibold">ARTS OF NDN</p>
+            </div>
+        </div>
+
+        <!-- Top Action Toolbar (Save / Clear / Download) -->
+        <div class="flex items-center space-x-2">
+            <button onclick="clearCanvas()" class="px-3 py-1.5 bg-slate-800 hover:bg-rose-950/50 hover:border-rose-500/50 border border-slate-700 text-slate-300 hover:text-rose-400 rounded-lg text-xs font-medium transition flex items-center space-x-1.5">
+                <i class="fa-solid fa-trash-can"></i>
+                <span class="hidden sm:inline">Clear Canvas</span>
+            </button>
+            <button onclick="saveArtwork()" class="px-3 py-1.5 bg-gradient-to-r from-brand-cyan to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-semibold rounded-lg text-xs shadow-lg shadow-cyan-500/20 transition flex items-center space-x-1.5">
+                <i class="fa-solid fa-download"></i>
+                <span>Save Art</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace (Split View) -->
+    <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+
+        <!-- LEFT SIDE: Reference Picture Panel -->
+        <section class="flex-1 flex flex-col border-b md:border-b-0 md:border-r border-slate-800 bg-slate-900/40 relative">
+            
+            <!-- Reference Panel Top Bar -->
+            <div class="bg-slate-900/80 px-4 py-2 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 shrink-0">
+                <div class="flex items-center space-x-2">
+                    <span class="text-xs font-semibold text-brand-cyan uppercase tracking-wider"><i class="fa-solid fa-image mr-1.5"></i> Reference from Gallery</span>
+                    <label class="cursor-pointer bg-brand-cyan/10 hover:bg-brand-cyan/20 border border-brand-cyan/30 text-brand-cyan px-2.5 py-1 rounded-md text-xs font-medium transition flex items-center space-x-1.5">
+                        <i class="fa-solid fa-upload"></i>
+                        <span>Upload Pic</span>
+                        <input type="file" id="imageLoader" accept="image/*" class="hidden" onchange="loadReferenceImage(event)">
+                    </label>
+                </div>
+
+                <!-- Reference Controls -->
+                <div class="flex items-center space-x-3 text-xs">
+                    <label class="flex items-center space-x-1.5 cursor-pointer text-slate-300 hover:text-white">
+                        <input type="checkbox" id="gridToggle" onchange="toggleGrid()" class="rounded bg-slate-800 border-slate-700 text-brand-cyan focus:ring-0">
+                        <span>Grid</span>
+                    </label>
+                    <div class="flex items-center space-x-1.5 bg-slate-800/60 px-2 py-1 rounded border border-slate-700/60">
+                        <span class="text-slate-400">Grid Size:</span>
+                        <input type="range" id="gridSizeSlider" min="10" max="150" step="5" value="40" oninput="changeGridSize(this.value)" class="w-16 accent-brand-cyan">
+                        <span id="gridSizeVal" class="text-brand-cyan font-mono w-6 text-right">40</span><span class="text-slate-500">px</span>
+                    </div>
+                    <div class="flex items-center space-x-1.5">
+                        <span class="text-slate-400">Opacity:</span>
+                        <input type="range" id="opacitySlider" min="0.1" max="1" step="0.05" value="1" oninput="changeOpacity(this.value)" class="w-16 accent-brand-cyan">
+                    </div>
+                    <button id="lockBtn" onclick="toggleLockReference()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-md text-slate-300 transition flex items-center space-x-1">
+                        <i id="lockIcon" class="fa-solid fa-lock-open text-brand-gold"></i>
+                        <span id="lockText">Lock</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Reference Canvas / Image Container -->
+            <div id="referenceContainer" class="flex-1 relative overflow-hidden flex items-center justify-center bg-slate-950/65">
+                <div id="referencePlaceholder" class="text-center p-6 text-slate-500">
+                    <i class="fa-regular fa-image text-4xl mb-2 text-slate-600"></i>
+                    <p class="text-sm font-medium">No Reference Picture Loaded</p>
+                    <p class="text-xs text-slate-600 mt-1">Click "Upload Pic" to load your sketch reference.</p>
+                    <p class="text-[11px] text-brand-gold/70 mt-3 italic"><i class="fa-solid fa-lightbulb"></i> Zoom your pic and lock it to sketch along!</p>
+                </div>
+                <!-- Interactive Reference Wrapper -->
+                <div id="refWrapper" class="absolute cursor-grab active:cursor-grabbing transition-transform duration-75 hidden" style="transform: translate(0px, 0px) scale(1);">
+                    <img id="refImage" alt="Reference" class="max-w-none pointer-events-none select-none shadow-2xl">
+                    <div id="refGridOverlay" class="absolute inset-0 pointer-events-none hidden" style="background-image: linear-gradient(to right, rgba(0, 242, 254, 0.5) 1px, transparent 1px), linear-gradient(to bottom, rgba(0, 242, 254, 0.5) 1px, transparent 1px); background-size: 40px 40px;"></div>
+                    <!-- Drawing Overlay Canvas on top of Reference Image when locked -->
+                    <canvas id="refPaintCanvas" class="absolute inset-0 w-full h-full pointer-events-none hidden"></canvas>
+                </div>
+                <!-- Instructions badge -->
+                <div class="absolute bottom-3 left-3 bg-slate-900/80 backdrop-blur border border-slate-800 px-3 py-1.5 rounded-lg text-[11px] text-slate-400 pointer-events-none">
+                    Scroll to Zoom • Drag to Pan
+                </div>
+            </div>
+        </section>
+
+        <!-- RIGHT SIDE: Drawing Paper Canvas -->
+        <section class="flex-1 flex flex-col bg-slate-900/20 relative">
+            
+            <!-- Drawing Paper Top Bar -->
+            <div class="bg-slate-900/80 px-4 py-2 border-b border-slate-800 flex items-center justify-between shrink-0">
+                <span class="text-xs font-semibold text-brand-gold uppercase tracking-wider"><i class="fa-solid fa-pen-nib mr-1.5"></i> Drawing Paper</span>
+                <div class="flex items-center space-x-2 text-xs text-slate-400">
+                    <span>Brush Size: <strong id="brushSizeVal" class="text-brand-cyan">4</strong>px</span>
+                    <input type="range" id="brushSize" min="1" max="50" value="4" oninput="updateBrushSize(this.value)" class="w-20 accent-brand-gold">
+                </div>
+            </div>
+
+            <!-- Canvas Element -->
+            <div id="canvasContainer" class="flex-1 relative overflow-hidden bg-white cursor-crosshair">
+                <canvas id="paintCanvas" class="absolute inset-0 w-full h-full"></canvas>
+            </div>
+        </section>
+    </main>
+
+    <!-- Bottom Toolbox Panel (Tools, Colors, Shapes) -->
+    <footer class="bg-slate-900 border-t border-slate-800 p-3 shrink-0 z-20 shadow-2xl">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+            
+            <!-- Tools Group -->
+            <div class="flex items-center space-x-2 bg-slate-950/60 p-1.5 rounded-xl border border-slate-800">
+                <span class="text-[10px] uppercase tracking-wider text-slate-500 font-bold px-2 hidden sm:inline">Tools</span>
+                <button onclick="setTool('pencil')" id="tool-pencil" title="Pencil" class="w-9 h-9 rounded-lg flex items-center justify-center bg-brand-cyan/20 text-brand-cyan border border-brand-cyan/40 transition">
+                    <i class="fa-solid fa-pencil text-sm"></i>
+                </button>
+                <button onclick="setTool('brush')" id="tool-brush" title="Brush" class="w-9 h-9 rounded-lg flex items-center justify-center bg-slate-900 text-slate-400 hover:text-white border border-transparent transition">
+                    <i class="fa-solid fa-paint-brush text-sm"></i>
+                </button>
+                <button onclick="setTool('eraser')" id="tool-eraser" title="Eraser" class="w-9 h-9 rounded-lg flex items-center justify-center bg-slate-900 text-slate-400 hover:text-white border border-transparent transition">
+                    <i class="fa-solid fa-eraser text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Shapes Group -->
+            <div class="flex items-center space-x-2 bg-slate-950/60 p-1.5 rounded-xl border border-slate-800">
+                <span class="text-[10px] uppercase tracking-wider text-slate-500 font-bold px-2 hidden sm:inline">Shapes</span>
+                <button onclick="setTool('line')" id="tool-line" title="Line" class="w-9 h-9 rounded-lg flex items-center justify-center bg-slate-900 text-slate-400 hover:text-white border border-transparent transition">
+                    <i class="fa-solid fa-slash text-sm"></i>
+                </button>
+                <button onclick="setTool('rectangle')" id="tool-rectangle" title="Rectangle" class="w-9 h-9 rounded-lg flex items-center justify-center bg-slate-900 text-slate-400 hover:text-white border border-transparent transition">
+                    <i class="fa-regular fa-square text-sm"></i>
+                </button>
+                <button onclick="setTool('circle')" id="tool-circle" title="Circle" class="w-9 h-9 rounded-lg flex items-center justify-center bg-slate-900 text-slate-400 hover:text-white border border-transparent transition">
+                    <i class="fa-regular fa-circle text-sm"></i>
+                </button>
+                <button onclick="setTool('triangle')" id="tool-triangle" title="Triangle" class="w-9 h-9 rounded-lg flex items-center justify-center bg-slate-900 text-slate-400 hover:text-white border border-transparent transition">
+                    <i class="fa-solid fa-play rotate-[-30deg] text-xs"></i>
+                </button>
+            </div>
+
+            <!-- Color Palette Grid -->
+            <div class="flex items-center space-x-2 bg-slate-950/60 p-1.5 rounded-xl border border-slate-800">
+                <span class="text-[10px] uppercase tracking-wider text-slate-500 font-bold px-2 hidden sm:inline">Color</span>
+                <div class="grid grid-cols-6 gap-1.5">
+                    <button onclick="setColor('#000000')" class="color-swatch w-5 h-5 rounded bg-black border-2 border-brand-cyan transition transform hover:scale-110" style="background-color: #000000;" title="Black"></button>
+                    <button onclick="setColor('#ef4444')" class="color-swatch w-5 h-5 rounded bg-red-500 border-2 border-transparent transition transform hover:scale-110" style="background-color: #ef4444;" title="Red"></button>
+                    <button onclick="setColor('#22c55e')" class="color-swatch w-5 h-5 rounded bg-green-500 border-2 border-transparent transition transform hover:scale-110" style="background-color: #22c55e;" title="Green"></button>
+                    <button onclick="setColor('#3b82f6')" class="color-swatch w-5 h-5 rounded bg-blue-500 border-2 border-transparent transition transform hover:scale-110" style="background-color: #3b82f6;" title="Blue"></button>
+                    <button onclick="setColor('#eab308')" class="color-swatch w-5 h-5 rounded bg-yellow-500 border-2 border-transparent transition transform hover:scale-110" style="background-color: #eab308;" title="Yellow"></button>
+                    <button onclick="setColor('#a855f7')" class="color-swatch w-5 h-5 rounded bg-purple-500 border-2 border-transparent transition transform hover:scale-110" style="background-color: #a855f7;" title="Purple"></button>
+                </div>
+                <input type="color" id="colorPicker" value="#000000" onchange="setColor(this.value)" class="w-6 h-6 rounded cursor-pointer bg-transparent border-0 ml-1" title="Custom Color">
+            </div>
+
+        </div>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // --- Toast Notification Helper ---
+        function showToast(message, icon = 'fa-solid fa-info-circle') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-message');
+            const toastIcon = document.getElementById('toast-icon');
+            
+            toastMsg.textContent = message;
+            toastIcon.className = icon + ' text-brand-cyan';
+            
+            toast.classList.remove('translate-x-full');
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+            }, 3000);
+        }
+
+        // --- Reference Image State & Interactivity ---
+        let isLocked = false;
+        let isDraggingRef = false;
+        let refStartX = 0, refStartY = 0;
+        let refPosX = 0, refPosY = 0;
+        let refScale = 1;
+
+        const refContainer = document.getElementById('referenceContainer');
+        const refWrapper = document.getElementById('refWrapper');
+        const refImage = document.getElementById('refImage');
+        const refPlaceholder = document.getElementById('referencePlaceholder');
+        const refPaintCanvas = document.getElementById('refPaintCanvas');
+        const refCtx = refPaintCanvas.getContext('2d');
+
+        let isDrawingRef = false;
+        let refStartXDraw = 0, refStartYDraw = 0;
+        let refSnapshot = null;
+
+        function loadReferenceImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    refImage.src = e.target.result;
+                    refImage.onload = function() {
+                        refPlaceholder.classList.add('hidden');
+                        refWrapper.classList.remove('hidden');
+                        
+                        // Set refPaintCanvas size to match natural image size for high precision drawing
+                        refPaintCanvas.width = refImage.naturalWidth;
+                        refPaintCanvas.height = refImage.naturalHeight;
+                        refPaintCanvas.style.width = '100%';
+                        refPaintCanvas.style.height = '100%';
+
+                        // Match grid overlay size to natural image dimensions
+                        const gridOverlay = document.getElementById('refGridOverlay');
+                        gridOverlay.style.width = refImage.naturalWidth + 'px';
+                        gridOverlay.style.height = refImage.naturalHeight + 'px';
+
+                        // Reset pan/zoom
+                        refPosX = 0;
+                        refPosY = 0;
+                        refScale = 1;
+                        updateRefTransform();
+                        showToast('Reference picture loaded successfully!', 'fa-solid fa-image');
+                    }
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function updateRefTransform() {
+            refWrapper.style.transform = `translate(${refPosX}px, ${refPosY}px) scale(${refScale})`;
+        }
+
+        // Reference Pan and Zoom Events
+        refContainer.addEventListener('mousedown', (e) => {
+            if (isLocked) {
+                // When locked, enable drawing directly on the reference canvas overlay
+                if (refWrapper.classList.contains('hidden')) return;
+                isDrawingRef = true;
+                const rect = refPaintCanvas.getBoundingClientRect();
+                const scaleX = refPaintCanvas.width / rect.width;
+                const scaleY = refPaintCanvas.height / rect.height;
+                refStartXDraw = (e.clientX - rect.left) * scaleX;
+                refStartYDraw = (e.clientY - rect.top) * scaleY;
+
+                refSnapshot = refCtx.getImageData(0, 0, refPaintCanvas.width, refPaintCanvas.height);
+
+                refCtx.beginPath();
+                refCtx.lineWidth = currentBrushSize * (refPaintCanvas.width / rect.width);
+                refCtx.lineCap = 'round';
+                refCtx.lineJoin = 'round';
+
+                if (currentTool === 'eraser') {
+                    refCtx.strokeStyle = 'rgba(0,0,0,1)';
+                    refCtx.globalCompositeOperation = 'destination-out';
+                } else {
+                    refCtx.globalCompositeOperation = 'source-over';
+                    refCtx.strokeStyle = currentColor;
+                    refCtx.fillStyle = currentColor;
+                }
+                return;
+            }
+
+            if (refWrapper.classList.contains('hidden')) return;
+            isDraggingRef = true;
+            refStartX = e.clientX - refPosX;
+            refStartY = e.clientY - refPosY;
+            refContainer.style.cursor = 'grabbing';
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (isLocked && isDrawingRef) {
+                const rect = refPaintCanvas.getBoundingClientRect();
+                const scaleX = refPaintCanvas.width / rect.width;
+                const scaleY = refPaintCanvas.height / rect.height;
+                const mouseX = (e.clientX - rect.left) * scaleX;
+                const mouseY = (e.clientY - rect.top) * scaleY;
+
+                if (currentTool === 'pencil' || currentTool === 'brush' || currentTool === 'eraser') {
+                    refCtx.lineTo(mouseX, mouseY);
+                    refCtx.stroke();
+                } else {
+                    if (refSnapshot) {
+                        refCtx.putImageData(refSnapshot, 0, 0);
+                    }
+                    drawRefShape(mouseX, mouseY);
+                }
+                return;
+            }
+
+            if (!isDraggingRef || isLocked) return;
+            refPosX = e.clientX - refStartX;
+            refPosY = e.clientY - refStartY;
+            updateRefTransform();
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (isLocked && isDrawingRef) {
+                isDrawingRef = false;
+                refCtx.closePath();
+                refSnapshot = null;
+                refCtx.globalCompositeOperation = 'source-over';
+                return;
+            }
+
+            isDraggingRef = false;
+            refContainer.style.cursor = 'default';
+        });
+
+        refContainer.addEventListener('wheel', (e) => {
+            if (isLocked || refWrapper.classList.contains('hidden')) return;
+            e.preventDefault();
+            const zoomIntensity = 0.1;
+            if (e.deltaY < 0) {
+                refScale = Math.min(refScale + zoomIntensity, 5);
+            } else {
+                refScale = Math.max(refScale - zoomIntensity, 0.2);
+            }
+            updateRefTransform();
+        });
+
+        function drawRefShape(x, y) {
+            refCtx.beginPath();
+            if (currentTool === 'line') {
+                refCtx.moveTo(refStartXDraw, refStartYDraw);
+                refCtx.lineTo(x, y);
+                refCtx.stroke();
+            } else if (currentTool === 'rectangle') {
+                let width = x - refStartXDraw;
+                let height = y - refStartYDraw;
+                refCtx.strokeRect(refStartXDraw, refStartYDraw, width, height);
+            } else if (currentTool === 'circle') {
+                let radius = Math.sqrt(Math.pow(x - refStartXDraw, 2) + Math.pow(y - refStartYDraw, 2));
+                refCtx.arc(refStartXDraw, refStartYDraw, radius, 0, 2 * Math.PI);
+                refCtx.stroke();
+            } else if (currentTool === 'triangle') {
+                refCtx.moveTo(refStartXDraw, refStartYDraw);
+                refCtx.lineTo(x, y);
+                refCtx.lineTo(refStartXDraw - (x - refStartXDraw), y);
+                refCtx.closePath();
+                refCtx.stroke();
+            }
+        }
+
+        function toggleLockReference() {
+            isLocked = !isLocked;
+            const lockBtn = document.getElementById('lockBtn');
+            const lockIcon = document.getElementById('lockIcon');
+            const lockText = document.getElementById('lockText');
+            const refPaintCanvas = document.getElementById('refPaintCanvas');
+
+            if (isLocked) {
+                lockIcon.className = 'fa-solid fa-lock text-rose-400';
+                lockText.textContent = 'Locked';
+                lockBtn.classList.add('border-rose-500/50', 'bg-rose-950/30');
+                refContainer.style.cursor = 'crosshair';
+                refPaintCanvas.classList.remove('hidden');
+                showToast('Reference picture locked. You can now sketch directly on it!', 'fa-solid fa-lock');
+            } else {
+                lockIcon.className = 'fa-solid fa-lock-open text-brand-gold';
+                lockText.textContent = 'Lock';
+                lockBtn.classList.remove('border-rose-500/50', 'bg-rose-950/30');
+                refContainer.style.cursor = 'default';
+                refPaintCanvas.classList.add('hidden');
+                showToast('Reference picture unlocked for panning/zooming.', 'fa-solid fa-lock-open');
+            }
+        }
+
+        function toggleGrid() {
+            const gridOverlay = document.getElementById('refGridOverlay');
+            const isChecked = document.getElementById('gridToggle').checked;
+            if (isChecked) {
+                gridOverlay.classList.remove('hidden');
+            } else {
+                gridOverlay.classList.add('hidden');
+            }
+        }
+
+        function changeGridSize(val) {
+            const size = parseInt(val);
+            document.getElementById('gridSizeVal').textContent = size;
+            const gridOverlay = document.getElementById('refGridOverlay');
+            gridOverlay.style.backgroundSize = `${size}px ${size}px`;
+        }
+
+        function changeOpacity(val) {
+            refImage.style.opacity = val;
+        }
+
+
+        // --- Drawing Canvas Setup & Logic ---
+        const canvas = document.getElementById('paintCanvas');
+        const ctx = canvas.getContext('2d');
+        const canvasContainer = document.getElementById('canvasContainer');
+
+        let currentTool = 'pencil';
+        let currentColor = '#000000';
+        let currentBrushSize = 4;
+        let isDrawing = false;
+        let startX = 0, startY = 0;
+        let snapshot = null;
+
+        function resizeCanvas() {
+            // Save current canvas state before resize
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            tempCtx.drawImage(canvas, 0, 0);
+
+            canvas.width = canvasContainer.clientWidth;
+            canvas.height = canvasContainer.clientHeight;
+
+            // White background for drawing paper
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Restore previous drawing
+            ctx.drawImage(tempCanvas, 0, 0);
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('load', () => {
+            resizeCanvas();
+        });
+
+        function setTool(tool) {
+            currentTool = tool;
+            // Highlight selected tool button
+            const tools = ['pencil', 'brush', 'eraser', 'line', 'rectangle', 'circle', 'triangle'];
+            tools.forEach(t => {
+                const btn = document.getElementById(`tool-${t}`);
+                if (btn) {
+                    if (t === tool) {
+                        btn.className = 'w-9 h-9 rounded-lg flex items-center justify-center bg-brand-cyan/20 text-brand-cyan border border-brand-cyan/40 transition';
+                    } else {
+                        btn.className = 'w-9 h-9 rounded-lg flex items-center justify-center bg-slate-900 text-slate-400 hover:text-white border border-transparent transition';
+                    }
+                }
+            });
+            showToast(`Selected tool: ${tool.toUpperCase()}`, 'fa-solid fa-screwdriver-wrench');
+        }
+
+        function setColor(color) {
+            currentColor = color;
+            document.getElementById('colorPicker').value = color;
+            // Update swatch borders
+            document.querySelectorAll('.color-swatch').forEach(swatch => {
+                if (swatch.style.backgroundColor === color || swatch.title.toLowerCase() === color) {
+                    swatch.style.borderColor = '#00f2fe';
+                } else {
+                    swatch.style.borderColor = 'transparent';
+                }
+            });
+        }
+
+        function updateBrushSize(size) {
+            currentBrushSize = parseInt(size);
+            document.getElementById('brushSizeVal').textContent = size;
+        }
+
+        // Canvas Mouse Events
+        canvas.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            startX = e.clientX - rect.left;
+            startY = e.clientY - rect.top;
+
+            // Save snapshot for shape previews *before* beginning new path
+            snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+            ctx.beginPath();
+            ctx.lineWidth = currentBrushSize;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            if (currentTool === 'eraser') {
+                ctx.strokeStyle = '#ffffff';
+            } else {
+                ctx.strokeStyle = currentColor;
+                ctx.fillStyle = currentColor;
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            if (currentTool === 'pencil' || currentTool === 'brush' || currentTool === 'eraser') {
+                ctx.lineTo(mouseX, mouseY);
+                ctx.stroke();
+            } else {
+                // Shape preview rendering
+                if (snapshot) {
+                    ctx.putImageData(snapshot, 0, 0);
+                }
+                drawShape(mouseX, mouseY);
+            }
+        });
+
+        canvas.addEventListener('mouseup', (e) => {
+            if (!isDrawing) return;
+            isDrawing = false;
+            ctx.closePath();
+            snapshot = null; // Clear snapshot after use
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            if (isDrawing) {
+                isDrawing = false;
+                snapshot = null;
+            }
+        });
+
+        function drawShape(x, y) {
+            ctx.beginPath();
+            if (currentTool === 'line') {
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+            } else if (currentTool === 'rectangle') {
+                let width = x - startX;
+                let height = y - startY;
+                ctx.strokeRect(startX, startY, width, height);
+            } else if (currentTool === 'circle') {
+                let radius = Math.sqrt(Math.pow(x - startX, 2) + Math.pow(y - startY, 2));
+                ctx.arc(startX, startY, radius, 0, 2 * Math.PI);
+                ctx.stroke();
+            } else if (currentTool === 'triangle') {
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(x, y);
+                ctx.lineTo(startX - (x - startX), y);
+                ctx.closePath();
+                ctx.stroke();
+            }
+        }
+
+        function clearCanvas() {
+            if (confirm('Are you sure you want to clear your drawing paper and reference sketches?')) {
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                if (refPaintCanvas && refCtx) {
+                    refCtx.clearRect(0, 0, refPaintCanvas.width, refPaintCanvas.height);
+                }
+                showToast('Canvases cleared.', 'fa-solid fa-trash-can');
+            }
+        }
+
+        function saveArtwork() {
+            const link = document.createElement('a');
+            link.download = 'arts-of-ndn-sketch.png';
+            link.href = canvas.toDataURL();
+            link.click();
+            showToast('Artwork saved successfully!', 'fa-solid fa-download');
+        }
+    </script>
+</body>
+</html>
